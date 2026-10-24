@@ -131,6 +131,10 @@ main{padding:10px 10px 40px 10px; max-width:1180px; margin:0 auto}
   transition:opacity .15s;
 }
 .blk .sub{display:block;font-weight:600;font-size:9.5px;opacity:.9}
+.blk .subs{display:block}
+.blk .subs>span{display:block;white-space:nowrap;line-height:11px;margin-top:1px}
+.blk .subs i{font-style:normal;font-weight:700;font-size:9.5px;padding:0 2px;border-radius:3px;box-shadow:inset 0 0 0 1px rgba(127,127,127,.6)}
+.blk .subs b{font-size:9px;font-weight:700;margin-left:2px}
 .blk.gray{background:var(--gray-block); border:1px solid var(--gray-border); color:var(--gray-ink); font-weight:600}
 .blk.dim{opacity:.14}
 .blk.live{box-shadow:0 0 0 2px var(--surface),0 0 0 3.5px var(--now)}
@@ -455,13 +459,13 @@ function buildOverview(){
         }else{
           style+=`background:${subVar(subs[0])};color:${subInk(subs[0])};`;
         }
-        const chip=SUB_META[s.themes.primary]?SUB_META[s.themes.primary].chip:"";
-        inner=ht>=30?`${esc(s.code)}<span class="sub">${esc(chip)}</span>`:(ht>=17?esc(s.code):"");
+        inner=ht>=30?`${esc(s.code)}${blkChipsHtml(s,ht)}`:(ht>=17?esc(s.code):"");
       }else{
         cls+=" gray";
         inner=ht>=17?esc(s.code):"";
       }
-      h+=`<div class="${cls}" data-code="${esc(s.code)}" style="${style}" title="${esc(s.code+" "+(s.topic||s.title))}">${inner}</div>`;
+      const tip=s.code+" "+(s.topic||s.title)+(themed(s)?"｜"+s.themes.subs.map(k=>SUB_META[k]?SUB_META[k].label:k).join("・"):"");
+      h+=`<div class="${cls}" data-code="${esc(s.code)}" style="${style}" title="${esc(tip)}">${inner}</div>`;
     }
     if(d===vn.dateStr) h+=`<div class="nowline" data-nl="${d}" style="top:${yOf(Math.min(Math.max(vn.minutes,AX_START),AX_END))}px"></div>`;
     h+=`</div>`;
@@ -640,6 +644,17 @@ function refreshLegend(){
 }
 
 /* ===== shared card ===== */
+/* overview block chips: EVERY cancer type of the session, primary first (it is the block colour),
+   one chip per line in its own sub colour. Lines that don't fit the block height collapse into
+   "+n" on the last visible line, so a multi-type session never reads as single-type
+   (bug 2026-10-24: ESMO PP02 held 食/胃/胰/GI but the block showed only 食). */
+function blkChipsHtml(s,ht){
+  const p=s.themes.primary, ks=[p,...s.themes.subs.filter(k=>k!==p)].filter(k=>SUB_META[k]);
+  const cap=Math.max(1,Math.floor((ht-17)/12));
+  const shown=ks.slice(0,cap), rest=ks.length-shown.length;
+  const chip=k=>`<i style="background:${subVar(k)};color:${subInk(k)}">${esc(SUB_META[k].chip)}</i>`;
+  return `<span class="subs">${shown.map((k,i)=>`<span>${chip(k)}${rest&&i===shown.length-1?`<b>+${rest}</b>`:""}</span>`).join("")}</span>`;
+}
 function famTagsHtml(s){
   if(!themed(s))return"";
   return s.themes.subs.map(k=>`<span class="famtag" style="background:${subVar(k)};color:${subInk(k)}">${SUB_META[k].label}</span>`).join("");
